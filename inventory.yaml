@@ -1,0 +1,6 @@
+micro_servers:
+ hosts:
+   server_149:
+      ansible_port: 22
+      ansible_host: user@ip
+      ansible_pass: password
