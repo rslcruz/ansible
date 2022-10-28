@@ -1,0 +1,76 @@
+---
+- name: Install docker,docker-compose,pandora agent and htop
+  hosts:
+    micro_servers
+  user: prueba
+  become: yes
+  vars:
+    usuarios:
+      - { usuario: prueba }
+  tasks:
+    - name: Upgrate packages
+      yum: name=* state=latest
+
+    - name: "Installing Docker Prerequisite packages"
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+
+    - name: "Configuring docker-ce repo"
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: 0644
+
+    - name: " Installing Docker latest version"
+      yum:
+        name: docker-ce
+        state: present
+
+    - name: " Starting and Enabling Docker service"
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: " Permisos de usuario"
+      shell: 'usermod -aG docker {{ item.usuario }}'
+      with_items: "{{ usuarios }}"
+
+    - name: Install docker-compose from official github repo
+      get_url:
+        url : https://github.com/docker/compose/releases/download/1.27.4/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x'  
+
+    - name: " Enlace simbolico docker-compose "
+      shell: 'ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose'
+      args:
+        warn: false
+      ignore_errors: yes     
+        
+    - name: Install qemu-guest-agent
+      yum:
+        name: qemu-guest-agent
+        state: latest
+
+    - name: Enable service qemu-guest-agent
+      ansible.builtin.service:
+        name: qemu-guest-agent
+        enabled: yes      
+
+    - name: install epel-release (CentOS)
+      yum:
+        name: epel-release
+        state: present
+        update_cache: yes
+
+    - name: install htop
+      package:
+        name: htop
+        state: present
+        update_cache: yes
